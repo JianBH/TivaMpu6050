@@ -25,8 +25,8 @@
 #define PWM_FREQUENCY 55// need  55 
 //char
 volatile char input;
-char Valid [] = "\tValid Input\n\r";
-char inValids [] = "\tInvalid Input\n\r";
+//char Valid [] = "\tValid Input\n\r";
+//char inValids [] = "\tInvalid Input\n\r";
 
 void PWM0_Init(void){
 	ui8Adjust = 83; //83 refer to zer0
@@ -150,7 +150,7 @@ int main(void) {
 		PWM0_Init();
 	
 		SysCtlClockSet(SYSCTL_SYSDIV_4 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ);
-		
+/*		
 		// Setting up GPIO for UART0
     SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
@@ -161,7 +161,7 @@ int main(void) {
 	
 		SysCtlPeripheralEnable(SYSCTL_PERIPH_UART1);
 		SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
-
+*/
     // Setting up GPIO for UART1
 		GPIOPinConfigure(GPIO_PC4_U1RX);
 		GPIOPinConfigure(GPIO_PC5_U1TX); 
@@ -171,24 +171,16 @@ int main(void) {
 		UARTConfigSetExpClk(UART1_BASE, SysCtlClockGet(), 115200, (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE | UART_CONFIG_PAR_NONE));
 
     IntMasterEnable(); //enable processor interrupts
-    IntEnable(INT_UART0); //enable the UART interrupt
-    UARTIntEnable(UART0_BASE, UART_INT_RX | UART_INT_RT); //only enable RX and TX interrupts
+    IntEnable(INT_UART1); //enable the UART interrupt
+    UARTIntEnable(UART1_BASE, UART_INT_RX | UART_INT_RT); //only enable RX and TX interrupts
 		
 		
 	while(1){
 		if (UARTCharsAvail(UART1_BASE)) // if char received on UART 1, transmit that char on UART 0
 		//	UARTCharPut(UART0_BASE, UARTCharGet(UART1_BASE));
-				input = UARTCharGet(UART0_BASE);
-        UARTCharPutNonBlocking(UART0_BASE, input); //echo character
-				Movement();
-				
-		if (UARTCharsAvail(UART0_BASE)){ // if char received on UART 0, transmit that char on UART 1
-		//	UARTCharPut(UART1_BASE, UARTCharGet(UART0_BASE));	
-		}		
 				input = UARTCharGet(UART1_BASE);
-        UARTCharPutNonBlocking(UART1_BASE, input); //echo character
-			//83 center
-			 Movement();	
+        			UARTCharPutNonBlocking(UART1_BASE, input); //echo character
+				Movement();
 		}
 
 }
