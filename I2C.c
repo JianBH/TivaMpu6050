@@ -1,7 +1,7 @@
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
-//#include <stdlib.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include "inc/tm4c123gh6pm.h"
@@ -33,6 +33,7 @@ int16_t avgAX, avgAY, avgAZ, stdX, stdY, stdZ;
 int16_t AX, AY, AZ;
 int16_t RawAx, RawAy, RawAz;
 char msg[128];
+char DataToSend;
 
 
 void MpuCalibration(int samples, uint8_t *data );
@@ -71,7 +72,49 @@ void GPIOEInit(void){
 	GPIOPinTypeI2C(GPIO_PORTE_BASE, GPIO_PIN_5); // Enables PE5(SDA Line) to be open drain & enables digital function for PE5
 	
 }
+void InitUART0(void){
+	
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);		// enabel UART 0
+  SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);		// enable GPIO A peripheral 
 
+  GPIOPinConfigure(GPIO_PA0_U0RX);		// Set PA0 as receiver
+  GPIOPinConfigure(GPIO_PA1_U0TX);		// Set PA1 as transmitter
+  GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1); 	// configure GPIO PA0 & PA1 to use UART function
+	
+	UARTConfigSetExpClk(UART0_BASE, SysCtlClockGet(), 115200,
+        (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE | UART_CONFIG_PAR_NONE)); // configure UART Clock 
+	
+	//UARTClockSourceSet(UART0_BASE, UART_CLOCK_PIOSC);
+	
+	UARTStdioConfig(0, 115200,20000000); // (Port Num 0, 115200 Baud Rate, clock )
+}
+void InitUART1(void){
+	
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_UART1);		// enabel UART 1
+  SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);		// enable GPIO C peripheral 
+
+  GPIOPinConfigure(GPIO_PC4_U1RX);		// Set PC4 as receiver
+  GPIOPinConfigure(GPIO_PC5_U1TX);		// Set PC5 as transmitter
+  GPIOPinTypeUART(GPIO_PORTC_BASE, GPIO_PIN_4 | GPIO_PIN_5); 	// configure GPIO PA0 & PA1 to use UART function
+	
+	UARTConfigSetExpClk(UART1_BASE, SysCtlClockGet(), 115200,
+        (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE | UART_CONFIG_PAR_NONE)); // configure UART Clock 
+	
+	//UARTClockSourceSet(UART0_BASE, UART_CLOCK_PIOSC);
+	
+	//UARTStdioConfig(0, 115200,20000000); // (Port Num 0, 115200 Baud Rate, clock )
+}
+void UART0Send(char *str){
+	while(*str != '\0'){
+		while(UARTBusy(UART0_BASE));
+		UARTCharPut(UART0_BASE,*str++);
+		}
+}
+
+void Delay(unsigned long counter){
+	unsigned long i =0;
+ 	for(i =0; i < counter*1000;i++);
+}
 
 void readI2C2MultipleV2(uint8_t Slave_address, uint8_t Slave_reg, int count, uint8_t *data){
 	
@@ -145,11 +188,8 @@ void CheckError(void){
 	if((I2C2_MCS_R & 0x40) == 0x01){
 		UARTprintf("Clock timeout error!\n");
 	}
-
-
 }
 		
-
 void MPU6050init(void){
 	writeI2C2(0x68, MPU6050_O_PWR_MGMT_1, 0x01);
 	writeI2C2(0x68, MPU6050_O_SMPLRT_DIV, 0x07);
@@ -158,39 +198,12 @@ void MPU6050init(void){
 	writeI2C2(0x68, MPU6050_O_GYRO_CONFIG, 0x01);
 	writeI2C2(0x68, MPU6050_O_INT_ENABLE,0x01);
 }	
-void InitUART(void){
-	
-	SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);		// enabel UART 0
-  SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);		// enable GPIO A peripheral 
-
-  GPIOPinConfigure(GPIO_PA0_U0RX);		// Set PA0 as receiver
-  GPIOPinConfigure(GPIO_PA1_U0TX);		// Set PA1 as transmitter
-  GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1); 	// configure GPIO PA0 & PA1 to use UART function
-	
-	UARTConfigSetExpClk(UART0_BASE, SysCtlClockGet(), 115200,
-        (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE | UART_CONFIG_PAR_NONE)); // configure UART Clock 
-	
-	//UARTClockSourceSet(UART0_BASE, UART_CLOCK_PIOSC);
-	
-	UARTStdioConfig(0, 115200,20000000); // (Port Num 0, 115200 Baud Rate, clock )
-}
-void UART0Send(char *str){
-	while(*str != '\0'){
-		while(UARTBusy(UART0_BASE));
-		UARTCharPut(UART0_BASE,*str++);
-		}
-}
-
-void Delay(unsigned long counter){
-	unsigned long i =0;
- 	for(i =0; i < counter*1000;i++);
-}
 
 void MpuCalibration(int samples, uint8_t *data ){
 	UARTprintf("Beginning Calibration.......\n");
 	int16_t *x ,*y, *z;
 	int16_t sumX, sumY, sumZ;
-	int16_t SDx,SDy, SDz;
+	uint16_t SDx,SDy, SDz;
 	int counter = samples;
 	writeI2C2(0x68, MPU6050_O_PWR_MGMT_1, 0x80); // reset device
 	Delay(1000);
@@ -202,9 +215,7 @@ void MpuCalibration(int samples, uint8_t *data ){
 		x[i] = ((data[0] << 8) | data[1]);
 		y[i] = ((data[2] << 8) | data[3]);
 		z[i] = ((data[4] << 8) | data[5]);
-	}
-	
-	for(int i =0; i < counter; i++){
+		
 		sumX += x[i];
 		sumY += y[i];
 		sumZ += z[i];
@@ -214,9 +225,9 @@ void MpuCalibration(int samples, uint8_t *data ){
 	avgAZ = sumZ /counter;
 	
 	for(int i =0; i < counter; i++){
-		SDx += (int16_t)pow(x[i] - avgAX, 2);
-		SDy += (int16_t)pow(y[i] - avgAY, 2);
-		SDz += (int16_t)pow(z[i] - avgAZ, 2);
+		SDx += (uint16_t)pow(abs(x[i] - avgAX), 2);
+		SDy += (uint16_t)pow(abs(y[i] - avgAY), 2);
+		SDz += (uint16_t)pow(abs(z[i] - avgAZ), 2);
 	}
 		
 		stdX = (int16_t)sqrt(SDx / counter);
@@ -228,21 +239,22 @@ void MpuCalibration(int samples, uint8_t *data ){
 	}
 
 char MovementDetection(int16_t x, int16_t y, int16_t z){
-	char state;
-	if(x < 520  && x  > -23){
+	char state = 'S';
+	if(x < 172  && x  > 32){
 		state = 'L'; // Left
 	}
-	if(x > -510 && x < -21 && (state != 'L')){
+	if(x > -172 && x < -35 && (state != 'L')){
 		state = 'R'; // right
 	}
-	if( y > -515 && y < -100 && (state != 'L' || state != 'R')){
+	if((z > 172 && z < 176) && state != 'R' && state != 'L'	) {
+	//if(state != 'F' || state != 'R' || state != 'L' || state !='B'){
+		state = 'S'; // stop
+	}
+	if( y > -135 && y < -50 && (state != 'L' || state != 'R')){
 		state = 'F'; // forward
 	}
-	if(y > 150 && y < 510){
+	if(y > 14 && y < 110){
 		state = 'B'; // backward
-	}
-	if(z > 510 && z < 550 &&(state != 'F' || state != 'R' || state != 'L')){
-		state = 'S'; // stop
 	}
 	return state;
 }
@@ -255,7 +267,8 @@ int main(void){
 	uint8_t values[14];
 	uint8_t calibrationVal[14];
 	//clockFreq = SysCtlClockGet();
-	InitUART();
+	InitUART0();
+	InitUART1();
 	GPIOEInit();
 	InitI2C2();
 	Delay(1000);
@@ -281,7 +294,6 @@ for(int j = 0; j < 4; j++){
 	
 	/*
 		readI2C2MultipleV2(0x68, MPU6050_O_SMPLRT_DIV, 4, values);
-
 		for(int i =0; i< 4; i++){
 			UARTprintf(" Value stored in [%d] = %d\n",i,values[i]);
 		}
@@ -316,8 +328,8 @@ for(int j = 0; j < 4; j++){
 	
 		
 		
-	//	unsigned int AXM =  values[0];
-		//unsigned int AXL = values[1];
+	unsigned int AXM =  values[0];
+	unsigned int AXL = values[1];
 		
 		AX = RawAx / (4*stdX);
 		AY =  RawAy / (4*stdY);
@@ -328,14 +340,19 @@ for(int j = 0; j < 4; j++){
 		
 		sprintf(msg, "Movement: %c",MovementDetection(AX,AY,AZ));
 		UART0Send(msg);
-	
-	
+		
+		DataToSend = MovementDetection(AX, AY, AZ);
+		
+		while(UARTBusy(UART1_BASE));
+		UARTCharPutNonBlocking(UART1_BASE, DataToSend);
+
 		/*
 		sprintf(msg, " RawAXM = %d \t",AXM);
 		UART0Send(msg);	
 		sprintf(msg, " RawAXL = %d \t",AXL);
 		UART0Send(msg);	
 		*/
+		
 		
 		/*
 		sprintf(msg, " RawAX = %d\t\t",AX);
@@ -344,8 +361,8 @@ for(int j = 0; j < 4; j++){
 		UART0Send(msg);	
 		sprintf(msg, " RawAZ = %d\t\t",AZ);
 		UART0Send(msg);	
-	
-		*/
+	*/
+		
 	
 
 		UARTprintf("\n");
@@ -356,3 +373,4 @@ for(int j = 0; j < 4; j++){
 	}
 
 	}
+
