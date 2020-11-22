@@ -134,17 +134,17 @@ void UARTIntHandler(void)
 
     uint32_t ui32Status;
 
-    ui32Status = UARTIntStatus(UART0_BASE, true); //get interrupt status
+    ui32Status = UARTIntStatus(UART1_BASE, true); //get interrupt status
 
-    UARTIntClear(UART0_BASE, ui32Status); //clear the asserted interrupts
+    UARTIntClear(UART1_BASE, ui32Status); //clear the asserted interrupts
 
-    while(UARTCharsAvail(UART0_BASE)) //loop while there are chars
-    {
-			
-				input = UARTCharGet(UART0_BASE);
-        UARTCharPutNonBlocking(UART0_BASE, input); //echo character
+   while(1){
+		if (UARTCharsAvail(UART1_BASE)) // if char received on UART 1, transmit that char on UART 0
+		//	UARTCharPut(UART0_BASE, UARTCharGet(UART1_BASE));
+				input = UARTCharGet(UART1_BASE);
+        			UARTCharPutNonBlocking(UART1_BASE, input); //echo character
 				Movement();
-	}
+		}
 }
 int main(void) {
 		PWM0_Init();
