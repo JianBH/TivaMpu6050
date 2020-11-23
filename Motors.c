@@ -16,6 +16,7 @@
 #include "driverlib/interrupt.h"
 #include "inc/hw_ints.h"
 #include <string.h>
+#include "utils/uartstdio.h"
 
 	volatile uint32_t ui32Load;
 	volatile uint32_t ui32PWMClock;
@@ -149,19 +150,20 @@ void UARTIntHandler(void)
 int main(void) {
 		PWM0_Init();
 	
-		SysCtlClockSet(SYSCTL_SYSDIV_10 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ);
-/*		
+		SysCtlClockSet(SYSCTL_SYSDIV_10 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ);		
 		// Setting up GPIO for UART0
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
+    		SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
+   		 SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
 
-    GPIOPinConfigure(GPIO_PA0_U0RX);
-    GPIOPinConfigure(GPIO_PA1_U0TX);
+    		GPIOPinConfigure(GPIO_PA0_U0RX);
+    		GPIOPinConfigure(GPIO_PA1_U0TX);
 		GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
+		UARTStdioConfig(0, 115200,20000000); // (Port Num 0, 115200 Baud Rate, clock )
+	
 	
 		SysCtlPeripheralEnable(SYSCTL_PERIPH_UART1);
 		SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
-*/
+	
     // Setting up GPIO for UART1
 		GPIOPinConfigure(GPIO_PC4_U1RX);
 		GPIOPinConfigure(GPIO_PC5_U1TX); 
@@ -180,6 +182,7 @@ int main(void) {
 		//	UARTCharPut(UART0_BASE, UARTCharGet(UART1_BASE));
 				//input = UARTCharGet(UART1_BASE);
         			//UARTCharPutNonBlocking(UART1_BASE, input); //echo character
+		UARTprintf("%c", input);
 				Movement();
 		}
 
