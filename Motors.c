@@ -143,7 +143,7 @@ void UARTIntHandler(void)
 		//	UARTCharPut(UART0_BASE, UARTCharGet(UART1_BASE));
 				input = UARTCharGet(UART1_BASE);
         			//UARTCharPutNonBlocking(UART1_BASE, input); //echo character
-				Movement();
+				//Movement();
 		}
 }
 int main(void) {
