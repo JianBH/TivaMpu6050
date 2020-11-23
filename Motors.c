@@ -142,14 +142,14 @@ void UARTIntHandler(void)
 		if (UARTCharsAvail(UART1_BASE)) // if char received on UART 1, transmit that char on UART 0
 		//	UARTCharPut(UART0_BASE, UARTCharGet(UART1_BASE));
 				input = UARTCharGet(UART1_BASE);
-        			UARTCharPutNonBlocking(UART1_BASE, input); //echo character
+        			//UARTCharPutNonBlocking(UART1_BASE, input); //echo character
 				Movement();
 		}
 }
 int main(void) {
 		PWM0_Init();
 	
-		SysCtlClockSet(SYSCTL_SYSDIV_4 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ);
+		SysCtlClockSet(SYSCTL_SYSDIV_10 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ);
 /*		
 		// Setting up GPIO for UART0
     SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
@@ -176,10 +176,10 @@ int main(void) {
 		
 		
 	while(1){
-		if (UARTCharsAvail(UART1_BASE)) // if char received on UART 1, transmit that char on UART 0
+		//if (UARTCharsAvail(UART1_BASE)) // if char received on UART 1, transmit that char on UART 0
 		//	UARTCharPut(UART0_BASE, UARTCharGet(UART1_BASE));
-				input = UARTCharGet(UART1_BASE);
-        			UARTCharPutNonBlocking(UART1_BASE, input); //echo character
+				//input = UARTCharGet(UART1_BASE);
+        			//UARTCharPutNonBlocking(UART1_BASE, input); //echo character
 				Movement();
 		}
 
