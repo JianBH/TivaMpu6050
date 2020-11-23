@@ -2,7 +2,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <stdio.h>
+//#include <stdio.h>
 #include <string.h>
 #include "inc/tm4c123gh6pm.h"
 #include "inc/hw_i2c.h"
@@ -26,14 +26,15 @@
 #include "sensorlib/i2cm_drv.h"
 
 #include <math.h>
-#pragma import(__use_no_semihosting_swi)
+//#pragma import(__use_no_semihosting_swi)
 
 uint32_t clockFreq;
 int16_t avgAX, avgAY, avgAZ, stdX, stdY, stdZ;
 int16_t AX, AY, AZ;
 int16_t RawAx, RawAy, RawAz;
 char msg[128];
-char DataToSend;
+volatile char DataToSend;
+volatile char input;
 
 
 void MpuCalibration(int samples, uint8_t *data );
@@ -110,6 +111,12 @@ void UART0Send(char *str){
 		UARTCharPut(UART0_BASE,*str++);
 		}
 }
+void UART1Send(char *str){
+	while(*str != '\0'){
+		while(UARTBusy(UART1_BASE));
+		UARTCharPut(UART1_BASE,*str++);
+		}
+	}
 
 void Delay(unsigned long counter){
 	unsigned long i =0;
@@ -156,7 +163,7 @@ void writeI2C2(uint16_t device_address, uint8_t device_reg, uint8_t device_data)
 	//send control byte and register address byte to slave device
 	I2CMasterControl(I2C2_BASE, I2C_MASTER_CMD_BURST_SEND_START);
 	
-	CheckError();
+	//CheckError();
 
 	//register to be written
 	I2CMasterDataPut(I2C2_BASE, device_reg);
@@ -189,6 +196,7 @@ void CheckError(void){
 		UARTprintf("Clock timeout error!\n");
 	}
 }
+
 		
 void MPU6050init(void){
 	writeI2C2(0x68, MPU6050_O_PWR_MGMT_1, 0x01);
@@ -304,7 +312,6 @@ for(int j = 0; j < 4; j++){
 			UARTprintf(" Value stored in [%d] = %d\n",i,values[i]);
 		}
 		*/
-		
 
 	while(1){
 		
@@ -328,8 +335,8 @@ for(int j = 0; j < 4; j++){
 	
 		
 		
-	unsigned int AXM =  values[0];
-	unsigned int AXL = values[1];
+	//unsigned int AXM =  values[0];
+	//unsigned int AXL = values[1];
 		
 		AX = RawAx / (4*stdX);
 		AY =  RawAy / (4*stdY);
@@ -337,14 +344,27 @@ for(int j = 0; j < 4; j++){
 		
 		
 	
+DataToSend = MovementDetection(AX, AY, AZ);
+UARTCharPut(UART0_BASE, DataToSend);
+
+if (UARTCharsAvail(UART1_BASE)){ // if char received on UART 1, transmit that char on UART 0
+			UARTCharPut(UART0_BASE, UARTCharGet(UART1_BASE));
+}
+		if (UARTCharsAvail(UART0_BASE)){ // if char received on UART 0, transmit that char on UART 1
+			UARTCharPut(UART1_BASE, UARTCharGet(UART0_BASE));
+		}
+
+	//sprintf(msg, "Movement: %c",MovementDetection(AX,AY,AZ));
+	//sprintf(msg, "Movement: %c",DataToSend);
+	//UART0Send(msg);
+	//UART1Send("F");
 		
-		sprintf(msg, "Movement: %c",MovementDetection(AX,AY,AZ));
-		UART0Send(msg);
 		
-		DataToSend = MovementDetection(AX, AY, AZ);
-		
-		while(UARTBusy(UART1_BASE));
-		UARTCharPutNonBlocking(UART1_BASE, DataToSend);
+		//UARTCharPut(UART1_BASE, 46);
+	
+		//UARTCharPutNonBlocking(UART1_BASE, DataToSend);
+	//	while(UARTBusy(UART1_BASE));
+		//SysCtlDelay(1000);
 
 		/*
 		sprintf(msg, " RawAXM = %d \t",AXM);
